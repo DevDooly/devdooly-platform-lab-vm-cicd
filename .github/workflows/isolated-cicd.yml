@@ -1,6 +1,7 @@
 name: Isolated VM CI/CD
 
 on:
+  # The setup push initializes only the trial registry.
   push:
     branches: [main]
     paths:
