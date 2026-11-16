@@ -2,7 +2,19 @@ name: Isolated VM CI/CD
 
 on:
   workflow_dispatch:
-  status:
+    inputs:
+      operation:
+        description: Bootstrap the lab package or publish a Jenkins-verified commit
+        type: choice
+        options: [bootstrap, publish]
+        default: bootstrap
+        required: true
+      source_sha:
+        description: Full source SHA for publish
+        type: string
+      status_id:
+        description: Verified Jenkins status ID for publish
+        type: string
 
 permissions:
   contents: read
@@ -16,7 +28,7 @@ env:
 
 jobs:
   bootstrap:
-    if: github.repository == 'DevDooly/devdooly-platform-lab-vm-cicd' && github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'
+    if: github.repository == 'DevDooly/devdooly-platform-lab-vm-cicd' && github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && inputs.operation == 'bootstrap'
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     permissions:
@@ -56,10 +68,13 @@ jobs:
   gate:
     if: >-
       github.repository == 'DevDooly/devdooly-platform-lab-vm-cicd' &&
-      github.event_name == 'status' &&
-      github.event.state == 'success' &&
-      github.event.context == 'ci/jenkins-vm-e2e' &&
-      github.event.sender.login == 'DevDooly'
+      github.event_name == 'workflow_dispatch' &&
+      github.ref == 'refs/heads/main' &&
+      inputs.operation == 'publish' &&
+      github.actor == 'DevDooly'
+    permissions:
+      contents: read
+      statuses: read
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     outputs:
@@ -71,19 +86,26 @@ jobs:
         id: status
         env:
           GH_TOKEN: ${{ github.token }}
+          SOURCE_SHA: ${{ inputs.source_sha }}
+          STATUS_ID: ${{ inputs.status_id }}
         run: |
-          source=$(jq -er '.sha' "$GITHUB_EVENT_PATH")
-          description=$(jq -er '.description' "$GITHUB_EVENT_PATH")
-          status_id=$(jq -er '.id | select(type == "number")' "$GITHUB_EVENT_PATH")
-          pattern='^Jenkins VM build ([1-9][0-9]*) verified$'
+          source=$SOURCE_SHA
+          status_id=$STATUS_ID
           [[ "$source" =~ ^[0-9a-f]{40}$ ]]
-          [[ "$description" =~ $pattern ]]
-          build="${BASH_REMATCH[1]}"
+          [[ "$status_id" =~ ^[1-9][0-9]*$ ]]
           live_main=$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/main" --jq '.object.sha')
           if [[ "$source" != "$live_main" ]]; then
             echo 'Jenkins verified a commit other than current main' >&2
             exit 1
           fi
+          status=$(gh api "repos/$GITHUB_REPOSITORY/commits/$source/statuses?per_page=100" \
+            --jq '[.[] | select(.context == "ci/jenkins-vm-e2e")] | first')
+          description=$(jq -er --arg id "$status_id" \
+            'select((.id | tostring) == $id and .state == "success" and .creator.login == "DevDooly") | .description' \
+            <<< "$status")
+          pattern='^Jenkins VM build ([1-9][0-9]*) verified$'
+          [[ "$description" =~ $pattern ]]
+          build="${BASH_REMATCH[1]}"
           printf 'source=%s\nbuild=%s\nstatus_id=%s\n' "$source" "$build" "$status_id" >> "$GITHUB_OUTPUT"
 
   publish:
