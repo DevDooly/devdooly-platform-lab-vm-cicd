@@ -1,11 +1,7 @@
 name: Isolated VM CI/CD
 
 on:
-  # The setup push initializes only the trial registry.
-  push:
-    branches: [main]
-    paths:
-      - .github/workflows/isolated-cicd.yml
+  workflow_dispatch:
   status:
 
 permissions:
@@ -20,7 +16,7 @@ env:
 
 jobs:
   bootstrap:
-    if: github.repository == 'DevDooly/devdooly-platform-lab-vm-cicd' && github.event_name == 'push'
+    if: github.repository == 'DevDooly/devdooly-platform-lab-vm-cicd' && github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     permissions:
