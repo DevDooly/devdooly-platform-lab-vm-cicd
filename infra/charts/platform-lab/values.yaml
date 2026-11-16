@@ -1,0 +1,127 @@
+# Defaults deliberately contain no deployable API/web image references.
+# Supply verified registry repositories and immutable digests, e.g. gitops environment values.
+api:
+  replicaCount: 1
+  image:
+    repository: ""
+    digest: ""
+  sourceCommit: unknown
+  environment: k3s
+  # Read-only Kafka observation is opt-in; target settings reuse the runtime values.
+  kafkaObservation:
+    enabled: false
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+      ephemeral-storage: 128Mi
+    limits:
+      cpu: "1"
+      memory: 768Mi
+      ephemeral-storage: 512Mi
+
+web:
+  replicaCount: 1
+  image:
+    repository: ""
+    digest: ""
+  resources:
+    requests:
+      cpu: 25m
+      memory: 64Mi
+      ephemeral-storage: 32Mi
+    limits:
+      cpu: 250m
+      memory: 192Mi
+      ephemeral-storage: 128Mi
+
+database:
+  replicaCount: 1
+  image:
+    repository: mariadb
+    tag: 11.8.9
+    digest: sha256:6422478cb8e159f080fb1d8ccf65101e26fe51385787fde7d16c3b165a331f15
+  # This chart never creates a Secret. It must already exist in the namespace.
+  existingSecret: ""
+  appPasswordKey: app-password
+  rootPasswordKey: root-password
+  persistence:
+    storageClass: local-path
+    size: 10Gi
+  resources:
+    requests:
+      cpu: 100m
+      memory: 512Mi
+      ephemeral-storage: 128Mi
+    limits:
+      cpu: "1"
+      memory: 1536Mi
+      ephemeral-storage: 1Gi
+
+# Optional references to registry credentials created outside this chart.
+imagePullSecrets: []
+
+# Deliberately unsupported during the private validation phase.
+ingress:
+  enabled: false
+
+# Explicit staged rollout only: API migrates V3 before the daemon starts.
+# Kafka/Garage bootstrap and private Secrets must exist before enabling worker.
+runtime:
+  kafka:
+    enabled: false
+    replicaCount: 1
+    image:
+      repository: apache/kafka
+      tag: 4.3.1
+      digest: sha256:ccd1314e47ec76909e01f86308b4dcf2064f19f7c89759234322314b0e319e26
+    existingSecret: ""
+    clusterIdKey: cluster-id
+    persistence:
+      storageClass: local-path
+      size: 5Gi
+    resources:
+      requests: {cpu: 250m, memory: 768Mi, ephemeral-storage: 128Mi}
+      limits: {cpu: "2", memory: 2Gi, ephemeral-storage: 512Mi}
+  garage:
+    enabled: false
+    replicaCount: 1
+    image:
+      repository: dxflrs/garage
+      digest: sha256:0d7c74fc8ca6fef68a5a941c0e7558c8b1e92ba3588fa7505400e1350456c796
+    # Full garage.toml, including the generated RPC secret, stays outside Git.
+    existingConfigSecret: ""
+    configKey: garage.toml
+    persistence:
+      storageClass: local-path
+      metadataSize: 2Gi
+      dataSize: 10Gi
+    resources:
+      requests: {cpu: 100m, memory: 256Mi, ephemeral-storage: 32Mi}
+      limits: {cpu: "1", memory: 1536Mi, ephemeral-storage: 128Mi}
+  worker:
+    enabled: false
+    # Enable only with an image that includes the local owner-progress writer/probe.
+    progressProbeEnabled: false
+    replicaCount: 1
+    # Explicit published API image with the runtime CLI; old API pins cannot be reused by accident.
+    image: {repository: "", digest: ""}
+    sourceCommit: unknown
+    environment: mini-pc
+    terminationGracePeriodSeconds: 300
+    topic: platform-lab-dispatch-v1
+    group: platform-lab-worker-v1
+    bucket: platform-lab-synthetic
+    region: garage
+    existingS3Secret: ""
+    accessKeyIdKey: access-key-id
+    secretAccessKeyKey: secret-access-key
+    resources:
+      requests: {cpu: 100m, memory: 256Mi, ephemeral-storage: 64Mi}
+      limits: {cpu: "1", memory: 768Mi, ephemeral-storage: 256Mi}
+
+# Optional internal read gateway; no live enablement or external listener by default.
+publicReadGateway:
+  enabled: false
+  # Optional private runtime override: one canonical RFC1918 IPv4 /32 only.
+  trustedProxyCidr: ""

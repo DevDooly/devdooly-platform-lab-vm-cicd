@@ -1,0 +1,26 @@
+# Runtime settings are separate from the strict image-only values.yaml publication gate.
+# API environment changes only when root coordinates the real rollout.
+api:
+  environment: mini-pc
+  kafkaObservation:
+    enabled: true
+# Root coordinates staged enablement after backup, migration and private bootstrap.
+runtime:
+  kafka:
+    enabled: true
+    existingSecret: platform-lab-kafka
+  garage:
+    enabled: true
+    existingConfigSecret: platform-lab-garage-config
+  worker:
+    enabled: true
+    progressProbeEnabled: true
+    image:
+      repository: ghcr.io/devdooly/devdooly-platform-lab-api
+      digest: sha256:ee71389be27fa484284a517a324c52a9c827cd20db21f0b306c4dcfd52147aad
+    sourceCommit: 6f551a16a8ed536bb126403234c41b9e9b266d43
+    existingS3Secret: platform-lab-runtime-s3
+
+# Internal ClusterIP only; bootstrap NetworkPolicy permission must be applied first.
+publicReadGateway:
+  enabled: true

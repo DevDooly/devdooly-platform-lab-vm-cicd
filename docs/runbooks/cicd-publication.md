@@ -1,0 +1,119 @@
+# Jenkins 검증과 Actions 게시 연결
+
+현재 main에서 운영 중인 연결 절차다. 전용 Jenkins status credential을 등록했고, 같은 source SHA의 Jenkins·Actions 성공을 요구하는 Actions 단일 이미지 게시자와 draft GitOps PR 제안을 활성화했다. 정상 B 배포·실제 JUnit 실패의 게시 차단·이전 정상 A digest 복구를 모두 확인했다. [실행 근거](../evidence/cicd-gate/README.md)에 실제 결과와 한계를 구분한다.
+
+[기술 결정](../adr/0004-jenkins-gated-actions-publication.md) · [기존 Jenkins 운영](jenkins-ci.md) · [이미지 게시](image-publication.md) · [GitOps](../../gitops/README.md)
+
+## 전용 credential과 권한
+
+현재는 2026-10-23에 연결한 **GitHub App**을 사용한다. [현재 App 설정·실행·만료 후 갱신 범위](jenkins-ci.md#github-app-연결-확인--2026-10-23-utc)와 [실행 근거](../evidence/github-app-jenkins/README.md)를 따른다.
+
+1. App 설치 대상을 Lab 저장소 한 개로 제한하고 **Commit statuses: Read and write**, 필수 **Metadata: Read-only**만 부여한다. 공개 SCM clone 방식은 유지하며 이 credential에 Packages·PR 쓰기 권한을 추가하지 않는다.
+2. Jenkins App credential ID는 `platform-lab-github-app`이다. Jenkinsfile은 필요한 단계에서 native `usernamePassword`로 설치 토큰을 바인딩한다. 개인키·토큰 원문을 채팅·Git·스크린샷·console에 넣지 않는다.
+3. repository variable `JENKINS_STATUS_ISSUER`는 실측한 `devdooly-platform-lab-ops[bot]`과 맞춘다. 새 환경에서는 그 환경의 실제 App 작성자를 확인하고 status client·게시 gate의 저장소 제한도 함께 맞춘다.
+
+2026-10-11 정상·실패·롤백 실험은 이전 PAT credential과 `DevDooly` issuer로 실행한 과거 기록이다. 원 [cicd-gate 근거](../evidence/cicd-gate/README.md)는 당시 값으로 보존하며 현재 App 설정으로 소급 변경하지 않는다. 기존 PAT는 보존했고 fallback은 시험하지 않았다. App의 한 차례 자연 만료 후 lazy refresh 확인을 개인키 회전·권한 철회 복구·갱신 뒤 전체 CI의 성공으로 확대하지 않는다.
+
+## 코드와 문법 재검증
+
+```sh
+python3 -m unittest discover -s tests/ci -p 'test_*.py' -v
+node --test tests/ci/github-commit-status.test.mjs
+```
+
+테스트는 네트워크·실제 토큰·서버를 사용하지 않는다. PR mutation 검증도 가짜 API에서 요청 대상과 draft 조건만 확인한다. Jenkins Declarative linter와 Actions 실제 실행은 별도로 확인한다.
+
+등록 전 준비 검증에서는 Jenkins Declarative linter가 통과했고 Jenkins 성공 기록이 없는 main에서 `JENKINS_STATUS_MISSING`으로 게시를 차단했다. 이후 실제 credential을 등록해 pending·success·failure 전달, 같은 SHA의 Actions 검증, GHCR 게시와 draft GitOps PR, Argo B 배포를 확인했다. 준비 검증과 실제 운영 결과는 [근거 문서](../evidence/cicd-gate/README.md)에서 구분한다.
+
+- Jenkins job은 기존 public repository의 main과 Jenkinsfile을 읽으며 controller executor 0·agent 1·Docker socket 없음·SA token 자동 mount 없음을 유지한다.
+- Credentials Binding 기능과 Node container의 status client 실행을 확인한다.
+- Jenkinsfile의 credential ID와 등록한 ID가 정확히 같아야 한다.
+- 저장소 variable이 없거나 최신 status가 pending/failure이면 게시하지 않는다.
+- branch의 Actions 검증은 게시용 main 성공으로 인정하지 않는다.
+
+## 운영 연결을 재검증하는 순서
+
+1. 전용 credential·issuer variable을 먼저 준비하고 상태 전달 권한을 확인한다. 기존 token의 원문을 출력하지 않는다.
+2. 변경한 코드·단위 검증·Jenkins 문법을 검토하고 main에 반영한다. 같은 main SHA에서 Jenkins를 한 번 실행한다. 현재 pollSCM이 main 변경을 확인하며, 수동 실행과 자동 감지를 중복 요청하지 않는다.
+3. 같은 main SHA의 Validate Lab containers를 실행한다. 관련 소스 변경은 자동 실행하며, 문서·GitOps-only commit은 경로 필터 때문에 필요할 때 수동 실행한다.
+4. Jenkins pending → API·웹 테스트 → 필수 산출물 archive → success를 실제로 확인한다. JUnit만으로 웹 테스트 수치를 대신하지 않는다.
+5. Actions의 gate 출력이 Jenkins build/status와 같은 소스 SHA·validation run을 가리키는지 확인한다.
+6. 실제 GHCR digest와 게시 artifact를 확인한다. 반복 status/workflow_run 이벤트에서 기존 artifact를 확인해 중복 게시를 종료하는지도 확인한다.
+
+main이 검증 중 바뀌면 이전 SHA는 게시하지 않는다. 새 main에서 필요한 두 검증을 다시 실행한다. 기존 성공을 새 source SHA의 성공으로 옮기지 않는다. 공개 GitHub metadata 조회의 일시적 제한·실패도 게시 성공으로 대체하지 않는다.
+
+### 실제 확인한 중복 빌드와 재시도
+
+실패 변경을 원복한 source SHA에서 Jenkins와 Actions 검증이 다시 성공했다. 이때 수동 실행과 pollSCM 감지가 겹쳐 같은 SHA의 Jenkins 빌드가 순차적으로 두 번 실행됐다. `disableConcurrentBuilds()`는 동시 실행을 제한하며 같은 SHA의 중복 빌드 생성까지 방지하지 않는다.
+
+두 번째 빌드의 pending은 첫 번째 빌드의 success보다 최신 상태였다. Actions가 registry 인증 직전 gate를 다시 확인해 게시를 차단했으므로 이전 성공으로 fallback하지 않는 동작을 실제로 확인했다. 이후 최신 success 이벤트의 게시·draft 제안은 성공했다. 이 추가 제안은 이번 훈련에서 적용하지 않고 닫았으며 최종 실행 상태는 복구한 A다. 이 결과를 중복 SCM 감지가 방지됐다고 설명하지 않는다.
+
+별도 게시 시도는 공개 GitHub metadata 조회의 HTTP 403으로 실패했다. 이 실행도 성공이나 배포 완료로 기록하지 않는다. 조회 실패 원인을 권한 확대나 오래된 결과 사용으로 우회하지 않고, 현재 main과 최신 두 CI 결과를 다시 확인한 새 이벤트·명시 재시도 결과를 따른다.
+
+## 활성화된 draft GitOps PR 제안
+
+현재 `LAB_GITOPS_PR_ENABLED=true`다. 사용자 승인으로 GitHub의 Actions PR 생성·승인 허용 설정을 켰으며 저장소 기본 workflow 권한은 read를 유지한다. proposer job에만 contents: write·pull-requests: write를 부여한다. 실제 draft PR 생성과 검토 후 main 반영을 확인했다. 워크플로는 자동 승인·자동 병합을 수행하지 않는다.
+
+이후 새 source SHA를 두 CI에서 검증해 새 이미지를 게시해야 PR 생성까지 이어진다. 이미 성공한 게시 artifact가 있는 SHA에 새 workflow를 실행하면 중복 게시 방지가 publish와 proposal을 모두 건너뛴다. 기존 실행의 proposal job만 실패했다면 해당 job 재실행 경로를 사용한다. 별도 새 workflow에서 과거 artifact를 읽어 proposal만 복구하는 기능은 아직 없다.
+
+- proposer는 단기 Actions GITHUB_TOKEN을 사용한다. Jenkins에 PR 쓰기 권한을 주지 않는다.
+- 두 digest와 sourceCommit만 전용 `automation/lab-images/<전체 SHA>` branch에 반영해 draft PR을 만든다.
+- 기존 열린 PR은 같은 저장소·branch의 draft이고 auto_merge가 null일 때만 재사용한다. ready PR은 자동으로 수정하지 않는다.
+- 알 수 없는 mutation 결과는 즉시 반복 요청하지 않는다. 다음 명시 실행이 기존 branch/PR을 읽고 재사용한다.
+- GITHUB_TOKEN이 만든 PR의 check가 실행되지 않거나 승인이 요구되면 실제 check 상태를 확인하고 필요한 검증을 명시적으로 실행한다. PR 생성 허용 설정이 모든 check의 자동 실행·자동 승인을 보장하지는 않는다.
+- PR check는 **변경 범위**를 검사한다. 병합 전 두 registry digest의 실제 존재·OCI revision, Helm lint/render를 별도로 확인한다. 이 보완과 실제 PR 검증이 끝나기 전 자동 병합을 도입하지 않는다.
+
+단독 값 준비/검증은 다음처럼 실행할 수 있다. 먼저 `.local` 디렉터리를 생성하고, 실제 digest와 SHA만 입력한다.
+
+```sh
+python3 infra/scripts/gitops_values.py prepare \
+  --before gitops/environments/home-lab/values.yaml \
+  --source-commit <검증한-40자리-SHA> \
+  --api-digest sha256:<API-64자리-digest> \
+  --web-digest sha256:<웹-64자리-digest> \
+  --output .local/proposed-values.yaml
+
+python3 infra/scripts/gitops_values.py validate \
+  --before gitops/environments/home-lab/values.yaml \
+  --after .local/proposed-values.yaml
+```
+
+이 작은 파일의 parser는 명시한 중첩 구조와 단순 값만 지원한다. YAML alias·tag·flow mapping·중복 key·예상 밖 값은 거부한다. chart 설정 확장이 필요하면 validator와 검증 범위를 먼저 수정한다.
+
+## 실제 결과와 재검증 조건
+
+### 정상 흐름
+
+같은 source SHA의 Jenkins API 15개·웹 13개 테스트와 필수 산출물, Actions 통합 검증, GHCR digest, draft GitOps PR과 main 반영, Argo B의 Synced·Healthy를 실제로 연결했다. Pod spec과 OCI index의 linux/amd64 child·CRI config 관계, source revision label, 웹 경유 HTTP와 기존 DB 결과도 확인했다. 공개 기록에는 허용한 요약만 넣는다. 재검증에도 동일한 출처 연결이 필요하다.
+
+### 테스트 실패 차단
+
+main에서 독립 기대 성공 건수를 8로 바꾼 실제 JUnit 음성 실험을 실행했다. API 테스트 15개 중 1개가 기대 8·실제 7로 실패했고 해당 SHA에 Jenkins failure가 전달됐으며 Actions 통합 검증도 실패했다. 해당 SHA의 새 이미지·게시 artifact·GitOps PR이 생성되지 않았다. 실패 전후 정확한 main commit의 values Git blob과 모든 bytes, Deployment UID·generation·template hash, Pod UID·시작 시각·container ID·imageID·restart count가 같았다. 전체 SQL·Flyway·처리 시각·PVC/PV·DB mount와 기존 Docker도 유지됐다. Argo revision은 실패 commit으로 진행할 수 있지만 B의 선언·실행 이미지는 변하지 않았다. 실패 실험 변경은 원복했다.
+
+이 결과는 실제 main의 실패 차단이며, branch가 달라서 차단된 준비 검증과 구분한다. 다음 실패 실험도 동일한 범위와 원복 절차를 먼저 정하고 운영 DB·이미지는 수정하지 않는다.
+
+### 이전 digest 복구
+
+정상 A → 새 B 배포 후 GitOps PR로 API/Web pin과 sourceCommit을 A로 되돌렸다. 복구 PR의 값 변경 범위, 실제 A registry의 OCI 관계와 Helm strict lint/render를 확인한 뒤 main에 반영했다. Argo Synced·Healthy, 3개 Pod Ready, A image/config·원본 source 일치를 확인했다. A와 B에서 확보한 동일 기준의 전체 SQL·Flyway·run/event 시각·PVC/PV binding·mount와 기존 Docker 23개의 ID·mount·시작 시각, UFW·호스트 boot ID도 유지됐다. API·웹은 Recreate이며 이 검증이 무중단 배포를 증명하지는 않는다. 자동 동기화와 별도의 Argo rollback/helm upgrade를 혼용하지 않았다. [Argo CD 자동 동기화 제약](https://argo-cd.readthedocs.io/en/stable/user-guide/auto_sync/)
+
+Pod spec의 @digest는 선언 값과 비교한다. status.imageID가 OCI index와 다르면 linux/amd64 child manifest 관계를 확인한다. API 런타임의 env 기반 SHA/digest만으로 실행 이미지 일치를 주장하지 않는다. 실제 HTTP·성공 7/실패 3/중복 2/대기 0·기존 처리 시각·DB PVC 보존과 기존 서비스 응답을 함께 확인한다.
+
+정상 B 배포·실제 실패 차단·이전 정상 A digest 복구의 세 시나리오를 실제로 확인했다. 게시 결과·자동 draft 제안과 main 반영·실제 배포는 서로 구분하며 최종 실행 버전은 A다. 초기 비밀번호 교체, token 만료·실제 회전, 동시 요청 실험, K3s·Jenkins archive 전체 복원, 3단계 실시간 collector와 외부 API는 별도의 미완료 범위다.
+
+## GitHub metadata 조회의 임시 인증과 실패 진단
+
+2026-10-15 source `f7bdffeeb0e8806d6d17503a2bc8867e8656af64`의 실제 Actions·Jenkins 성공 뒤 [게시 실행 38735192254](https://github.com/DevDooly/devdooly-platform-lab/actions/runs/38735192254)는 gate의 `PUBLIC_METADATA_HTTP_403`에서 끝났습니다. 이미지 게시와 배포 PR 생성은 실행되지 않았습니다. 당시 응답의 rate-limit 헤더가 없어 403 원인을 확정할 수 없습니다.
+
+게시 workflow는 각 metadata 조회 step에만 `LAB_GITHUB_METADATA_TOKEN`으로 임시 `github.token`을 전달합니다. gate job은 contents·actions·statuses 읽기만 사용하며, publish·proposal job의 기존 package/PR 쓰기와 reader 경로를 구분합니다. 개발자 PAT나 Jenkins/Pages 토큰을 대신 사용하지 않습니다. 토큰이 없는 로컬 호출은 공개 metadata만 익명 조회할 수 있으며, 명시한 토큰의 401 실패 후 익명으로 재시도하지 않습니다.
+
+reader는 고정 HTTPS GitHub API와 이 저장소의 허용 GET 경로만 요청하고 모든 redirect를 거부합니다. 403/429에서는 허용한 숫자 `rate_limit_remaining`, `rate_limit_reset`, `retry_after_seconds`만 진단에 추가하며 응답 본문·토큰·다른 헤더를 기록하지 않습니다. 오류가 나면 게시를 차단하고 자동 재시도하지 않습니다. 현재 main·같은 SHA의 두 실제 CI 성공·최신 status/issuer·중복 게시 확인 조건은 그대로 유지합니다.
+
+단위검사 82개에는 실제 Request/opener 경계의 인증·redirect·401 fallback 금지·403/429 선별 진단·proposal reader/writer 분리 검사 13개가 포함됩니다. workflow YAML의 네 metadata step과 job별 권한도 확인했습니다. 실제 Actions job token으로 조회·이미지 게시하는 결과는 이 후보의 main 반영 후 별도 근거로 기록합니다.
+
+GitHub는 익명 REST 조회를 IP 기준 시간당 60회, Actions의 `GITHUB_TOKEN` 조회를 저장소 기준 시간당 1,000회로 설명합니다. 403만으로 rate-limit 원인을 판정하지 않고 응답 헤더와 실제 실행 결과를 확인합니다. [GitHub REST rate limits](https://docs.github.com/en/rest/using-the-rest-api/rate-limits-for-the-rest-api), [GITHUB_TOKEN 최소 권한](https://docs.github.com/en/actions/tutorials/authenticate-with-github_token)
+
+### 실제 job token 형식 검사의 후속 수정
+
+source `c9e49f57a5cd9849a13d5d8ec267c34006bd21cc`의 [게시 실행 38741425623](https://github.com/DevDooly/devdooly-platform-lab/actions/runs/38741425623)은 `INVALID_METADATA_TOKEN`으로 게시 전에 중단됐습니다. reader가 토큰을 영문·숫자·밑줄 20~255자로 가정한 코드 결함입니다. 실제 토큰을 읽거나 출력하지 않았으며 구체적인 토큰 형식은 추정하지 않습니다.
+
+후속 검사는 20~8,192자의 공백·제어문자 없는 visible ASCII만 허용합니다. 길고 구두점이 포함된 opaque 값도 실제 Request/opener 경로에서 헤더로 전달하는 회귀 검사를 추가했습니다. 토큰의 유효성은 GitHub 응답으로 판단하며 고정 HTTPS host·허용 GET 경로·redirect 거부·명시적 step token·401 후 fallback 금지는 유지합니다. 후속 focused 검사 56개가 통과했으며, 실제 게시 성공 여부는 새 main의 실행으로 별도 확인합니다.

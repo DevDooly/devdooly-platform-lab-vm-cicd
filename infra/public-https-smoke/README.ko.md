@@ -1,0 +1,21 @@
+# 외부 HTTPS 조회 검증 실행기
+
+GitHub hosted Linux에서 Lab 공개 API의 표준 HTTPS와 고정 6 GET, 거부 3개를 한 번 확인하기 위한 수동 실행기다. 초기 소스 준비 시점에는 Windows Node24.19.0 합성 offline15검사까지만 확인했다. 이후 실제 외부 연결은 [10월20일 운영 근거](../../docs/evidence/public-read-https/ops-20261020/README.md), 별도 TLS1회·HTTP0회의 인증서 유효기간은 [첫 저장 관측](../../docs/evidence/tls-certificate/README.md)을 따른다. 기존 웹 DTO 검증 소스를 직접 사용하며 npm 설치·API 작업 생성·배포는 하지 않는다.
+
+모든 모드에서 기존 Traefik을 유지하는 Lab 전용 라우트의 소유와 거부 경로를 먼저 확인한다. 특히 POST가 기존 catchall로 전달되지 않는다는 metadata를 검토한다. candidate 모드는 TLS 준비 여부가 아직 불명확해도 표준 CA·SNI 검증을 강제한 채 시험할 수 있다. TLS가 실패하면 해당 요청에서 중단하고 이후 GET·POST나 live 변수 등록을 하지 않는다. 운영 설정으로의 전환은 표준 TLS와 hosted GET6·거부3 통과 뒤에만 진행한다.
+
+기본 설정은 저장소 변수 `LAB_PUBLIC_API_URL`의 명시적 HTTPS `/platform-lab/api` 또는 `/api` base다. 선택적 candidate 검사는 이 live 설정을 등록하거나 바꾸지 않고 별도 secret만 사용할 수 있다. Actions는 vars 값을 env에 표시할 수 있으므로, 이 실행기에만 동명 저장소 secret을 같은 값으로 등록해 자동 마스킹을 적용한다. workflow에는 secret 값과 vars·secret 일치 boolean만 전달된다. 미설정·불일치·확인 입력 누락이면 DNS·HTTP 0회로 실패한다. secret·variable 등록은 이 소스 준비에 포함하지 않았다.
+
+수동 입력 `use_candidate_endpoint`는 기본 false다. false일 때는 기존 `LAB_PUBLIC_API_URL` 변수와 동명 secret의 일치 검사를 그대로 사용한다. true이면 전용 저장소 secret `LAB_PUBLIC_API_CANDIDATE_URL`만 URL로 전달하고, secret이 비어 있지 않다는 boolean을 확인한다. URL은 workflow input이나 로그에 넣지 않는다. 두 단계는 명시적 조건으로 한쪽만 실행하므로 빈 candidate secret이 production endpoint로 fallback하지 않는다. candidate도 같은 main/manual/저장소/ACK2/offline 조건과 고정 GET6·거부3·CA/SNI·한도를 따른다. candidate 성공은 Pages live 설정 완료를 뜻하지 않으며, hosted GET6+거부3이 모두 통과한 뒤에만 live 변수·secret 등록과 Pages 연결을 별도로 결정한다.
+
+수동 외부 검증은 offline job 성공 뒤, 이 저장소의 main과 확인 입력 2개가 모두 참일 때만 실행된다. Source commit은 정확한 checkout SHA에 바인딩된다. 출력은 검사별 boolean·HTTP status·검증된 공개 sourceCommit·UTC 시각과 고정 실패 enum뿐이다. 주소·응답 본문·예외문·인증서 상세·토큰·header 원문은 로그나 artifact에 남기지 않는다.
+
+PR·main push는 실행기·workflow·재사용 검증기 5개·합성 fixture 경로가 바뀔 때 offline 테스트만 자동 실행한다. `smoke.test.mjs`는 기존 `apps/lab-web/src/data/snapshot.json`을 직접 읽고, 실행기를 import하기 전에 Node 기본 DNS·HTTPS·대기 함수를 mock으로 바꾼다. 공개 IPv4 바인딩·SNI, 불완전 설정의 IO 0, redirect·크기·시간 제한·관측 시각과 오류 비공개를 확인한다. fixture를 새로 복제하지 않으며 테스트가 실제 외부 API를 호출하지 않는다. Git checkout·Node 도구 준비 단계와 테스트 자체를 구분한다. 기존 웹 120개와 JMH는 이 workflow에서 반복하지 않는다.
+
+표준 DNS lookup에서 보수적인 공개 IPv4 subset에 속한 주소 하나를 골라 9개 이하의 연결에 고정한다. private·loopback·link-local·예약 대역은 거부하며, IPv6 도달성을 검증했다고 주장하지 않는다. HTTPS hostname·SNI·Host와 표준 CA 검증을 유지하고 TLS 우회·프록시·인증·쿠키·redirect·주소 재시도는 사용하지 않는다. 요청별 15초, DNS 5초, 전체 150초, 응답 헤더 16KiB, 본문 총 1MiB로 제한하며 1.1초 간격으로 순차 실행한다.
+
+GET은 summary → releases → run list → 고정 합성 run detail → jobs → Kafka 순서다. 기존 `isObservationRecord`·job validator·엄격 Kafka parser를 재사용한다. 모든 GET이 통과한 뒤 같은 base 내부의 잘못된 경로·거부 Origin·본문 없는 POST를 각 한 번 확인한다. 이 응답만으로 upstream 미도달이나 기존 서비스 전체 무변경을 독립 증명하지 않는다. 요청·헤더·본문 상한 또는 계약이 하나라도 실패하면 재시도와 후속 요청을 중단한다.
+
+서버와 실행기 시계 차이로 정상 응답을 거부하지 않도록 Lab 관측 4개·jobs·Kafka 시각에는 실행기 현재 시각보다 최대 5,000ms 앞선 값까지 허용한다. 엄격 UTC·실제 날짜·최대 9자리 소수초를 유지하고 상한은 나노초로 비교한다. Lab의 재사용 계약에 넣는 `validationCeilingAt`은 RAM 내부의 검증 상한이며 실제 수집 metadata로 게시하지 않는다. 서버가 보낸 원 시각과 결과의 실제 `captureStartedAt`·`capturedAt`은 바꾸지 않는다. 이 허용 범위는 시계 정확도나 시간 동기화 성공의 증거가 아니다.
+
+실제 실행은 루트의 [프로젝트 실행 목록](../../docs/NEXT_STEPS.md)과 라우트 소유 확인 뒤 수동 workflow로 진행한다. 기본 Pages 화면·`LAB_PUBLIC_API_URL` 변수·서버·인증서는 이 후보에서 변경하지 않는다.

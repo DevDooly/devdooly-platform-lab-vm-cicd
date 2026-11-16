@@ -1,0 +1,18 @@
+{
+  "api": {
+    "image": {
+      "repository": "ghcr.io/devdooly/devdooly-platform-lab-api",
+      "digest": "sha256:a7fbcefb482c1bd6149663196845b33f30323b897261c567f3c82d583e457441"
+    },
+    "sourceCommit": "c7540354fca2bd65d4cdcb576e7fba9ddd483928"
+  },
+  "web": {
+    "image": {
+      "repository": "ghcr.io/devdooly/devdooly-platform-lab-web",
+      "digest": "sha256:ed9d743726a2b451cbd0dabcf6f41c10f821ec75808d1480491a0a59f22b553c"
+    }
+  },
+  "database": {
+    "existingSecret": "platform-lab-vm-cicd-db"
+  }
+}

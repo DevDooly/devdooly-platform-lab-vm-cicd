@@ -1,0 +1,161 @@
+.evidence-section {
+  padding-top:72px;
+  padding-bottom:72px;
+  border-top:1px solid var(--line);
+}
+.evidence-heading {
+  align-items:flex-start;
+  gap:24px;
+}
+.evidence-heading p,.evidence-intro {
+  max-width:66ch;
+  color:var(--muted);
+  font-size:var(--font-body);
+}
+.evidence-intro { margin-bottom:24px; }
+.evidence-filters {
+  display:flex;
+  flex-wrap:wrap;
+  align-items:flex-end;
+  gap:16px;
+}
+.evidence-filters label {
+  display:flex;
+  flex:1 1 210px;
+  min-width:0;
+  max-width:300px;
+  flex-direction:column;
+  gap:8px;
+  font-weight:600;
+  font-size:var(--font-body);
+}
+.evidence-filters .evidence-search {
+  flex:2 1 320px;
+  max-width:none;
+}
+.evidence-filters select,.evidence-filters input {
+  min-height:48px;
+  width:100%;
+  min-width:0;
+  box-sizing:border-box;
+  padding:10px 34px 10px 12px;
+  border:1px solid var(--muted);
+  background:var(--surface);
+  color:var(--ink);
+  font-size:var(--font-body);
+}
+.evidence-filters input { padding:10px 12px; }
+.evidence-filters input:focus-visible {
+  outline:3px solid var(--ink);
+  outline-offset:4px;
+}
+.evidence-reset,.evidence-more .button {
+  min-height:48px;
+  font-size:var(--font-body);
+}
+.evidence-count {
+  margin:20px 0 16px;
+  font-size:1rem;
+  color:var(--muted);
+}
+.evidence-share { display:flex; flex-wrap:wrap; align-items:center; gap:12px 20px; margin-top:20px; }
+.evidence-share .button { min-height:48px; font-size:var(--font-body); }
+.evidence-share p { margin:0; color:var(--muted); font-size:var(--font-body); }
+.evidence-share label { display:flex; flex:1 1 100%; min-width:0; flex-direction:column; gap:8px; font-weight:600; }
+.evidence-share input { width:100%; min-width:0; box-sizing:border-box; padding:10px 12px; min-height:48px; border:1px solid var(--muted); background:var(--surface); color:var(--ink); font-size:var(--font-body); }
+.evidence-share :is(button,input):focus-visible { outline:3px solid var(--ink); outline-offset:4px; }
+.evidence-grid {
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:18px;
+  padding:0;
+  margin:0;
+  list-style:none;
+}
+.evidence-grid>li { min-width:0; }
+.evidence-card {
+  height:100%;
+  display:flex;
+  flex-direction:column;
+  gap:14px;
+  padding:24px;
+  border:1px solid var(--line);
+  background:var(--surface);
+  overflow-wrap:anywhere;
+}
+.evidence-card-meta {
+  display:flex;
+  flex-wrap:wrap;
+  align-items:center;
+  justify-content:space-between;
+  gap:8px;
+  font-size:var(--font-small);
+  font-weight:700;
+}
+.evidence-scope { color:var(--green); }
+.evidence-state { color:var(--muted); }
+.evidence-card h3 { font-size:var(--font-card-title); }
+.evidence-card p { font-size:var(--font-body); }
+.evidence-card .evidence-boundary {
+  color:var(--muted);
+  font-size:1rem;
+  line-height:1.75;
+}
+.evidence-boundary strong { font-weight:600; color:var(--ink); }
+.evidence-card .evidence-date {
+  margin-top:auto;
+  color:var(--muted);
+  font-size:var(--font-small);
+}
+.evidence-links {
+  display:flex;
+  flex-wrap:wrap;
+  gap:12px 18px;
+  list-style:none;
+  padding:0;
+  margin:0;
+}
+.evidence-links a {
+  display:inline-flex;
+  align-items:center;
+  gap:4px;
+  min-height:44px;
+  text-decoration:underline;
+  text-underline-offset:4px;
+  font-size:1rem;
+  font-weight:600;
+}
+.evidence-card-pending { background:var(--orange-soft); }
+.evidence-card-pending .evidence-state { color:var(--orange-ink); }
+.evidence-empty {
+  padding:28px;
+  border:1px solid var(--line);
+  background:var(--surface);
+  font-size:var(--font-body);
+  overflow-wrap:anywhere;
+}
+.evidence-more {
+  display:flex;
+  justify-content:center;
+  margin-top:24px;
+}
+.evidence-more .button {
+  width:min(100%,320px);
+  white-space:normal;
+}
+.evidence-more .button[aria-disabled="true"] {
+  cursor:default;
+  color:var(--muted);
+  background:var(--surface);
+  border-color:var(--line);
+}
+@media(max-width:1050px) {
+  .evidence-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
+}
+@media(max-width:680px) {
+  .evidence-section { padding-top:48px; padding-bottom:48px; }
+  .evidence-heading { flex-direction:column; }
+  .evidence-grid { grid-template-columns:minmax(0,1fr); }
+  .evidence-filters label { max-width:none; }
+  .evidence-card { padding:22px; }
+}

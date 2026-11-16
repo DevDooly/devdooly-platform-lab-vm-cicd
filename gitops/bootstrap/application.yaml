@@ -1,0 +1,32 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: platform-lab-home
+  namespace: argocd
+spec:
+  project: platform-lab
+  source:
+    repoURL: https://github.com/DevDooly/devdooly-platform-lab.git
+    targetRevision: main
+    path: infra/charts/platform-lab
+    helm:
+      releaseName: lab
+      valueFiles:
+        - ../../../gitops/environments/home-lab/values.yaml
+        - ../../../gitops/environments/home-lab/runtime.yaml
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: platform-lab
+  syncPolicy:
+    automated:
+      prune: false
+      selfHeal: true
+      allowEmpty: false
+    retry:
+      limit: 3
+      backoff:
+        duration: 10s
+        factor: 2
+        maxDuration: 2m
+    syncOptions:
+      - PruneLast=true

@@ -1,0 +1,666 @@
+{
+  "schemaVersion": 1,
+  "scope": "ACTUAL_MINI_PC_READ_ONLY_PLATFORM_COLLECTION",
+  "phase3Status": "CORE_AUTOMATION_VERIFIED_TIMER_ACTIVE_OPERATIONAL_FOLLOW_UPS_REMAIN",
+  "finalVerifiedCollection": {
+    "capturedAt": "2026-10-11T15:27:44.173356Z",
+    "mainCommit": "e823cb793308e79ea5b7b5a17af2d554b4091275",
+    "jenkins": {
+      "sourceCommit": "e823cb793308e79ea5b7b5a17af2d554b4091275",
+      "buildNumber": 10,
+      "statusId": 56090140506,
+      "state": "success",
+      "createdAt": "2026-10-11T15:19:36Z",
+      "issuer": "DevDooly"
+    },
+    "argo": {
+      "revision": "e823cb793308e79ea5b7b5a17af2d554b4091275",
+      "sync": "Synced",
+      "health": "Healthy"
+    },
+    "deploymentSourceCommit": "820d5c398af2b1d62a0566f9184d015ab22e9f15",
+    "workloads": [
+      {
+        "component": "api",
+        "desired": 1,
+        "ready": 1,
+        "image": "ghcr.io/devdooly/devdooly-platform-lab-api@sha256:1c114976aeb32e3fa1c2dda84a0a27db0b390c38a6bb59e8c5ada771c340bcf4"
+      },
+      {
+        "component": "web",
+        "desired": 1,
+        "ready": 1,
+        "image": "ghcr.io/devdooly/devdooly-platform-lab-web@sha256:e389ce9083b07c8b8fdeac334b13c1f1af9a0066fd541f46e7db78b5651b855a"
+      },
+      {
+        "component": "database",
+        "desired": 1,
+        "ready": 1
+      }
+    ],
+    "sourceScope": "DEPLOYMENT_TEMPLATE_ANNOTATION",
+    "imageScope": "DEPLOYMENT_TEMPLATE_DECLARED_DIGEST",
+    "readinessScope": "ACTUAL_NON_TERMINATING_RUNNING_READY_PODS_WITH_ALL_CONTAINERS_READY"
+  },
+  "actualChecks": {
+    "readOnlyServiceAccountCollection": true,
+    "outputFileMode": "0600",
+    "authenticationFailurePreservedEntireLastSuccess": true,
+    "authenticationFailurePreservedCapturedAt": true,
+    "recoveredAfterAuthenticationFailure": true,
+    "authenticationFailureSequence": {
+      "firstSuccessCapturedAt": "2026-10-11T15:27:43.555475Z",
+      "failureAttemptedAt": "2026-10-11T15:27:43.705672Z",
+      "failurePreservedCapturedAt": "2026-10-11T15:27:43.555475Z",
+      "recoveredCapturedAt": "2026-10-11T15:27:44.173356Z"
+    },
+    "allowed": [
+      "NAMED_API_WEB_DEPLOYMENTS_GET",
+      "NAMED_DATABASE_STATEFULSET_GET",
+      "LAB_NAMESPACE_PODS_LIST",
+      "NAMED_ARGO_APPLICATION_GET"
+    ],
+    "denied": [
+      "SECRETS_GET_LIST",
+      "POD_LOGS_EXEC",
+      "NODES_READ",
+      "DEPLOYMENT_PATCH",
+      "OTHER_NAMESPACE_PODS_LIST",
+      "UNRELATED_ARGO_APPLICATION_GET"
+    ]
+  },
+  "localValidation": {
+    "webTestsPassed": 26,
+    "webTestsAddedForPlatformObservation": 13,
+    "astroCheck": {
+      "errors": 0,
+      "warnings": 0,
+      "hints": 0
+    },
+    "pagesBaseBuildPassed": true,
+    "collectorWindowsOfflineTests": {
+      "run": 41,
+      "passed": 40,
+      "failed": 0,
+      "errors": 0,
+      "posixModeTestSkipped": 1
+    },
+    "collectorUbuntuIsolatedTests": {
+      "run": 41,
+      "passed": 41,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0,
+      "posix0600TestPassed": true
+    },
+    "staleAndBrowserFetchFailureScope": "OFFLINE_UI_TESTS_ONLY",
+    "automationUbuntuIsolatedTests": {
+      "run": 33,
+      "passed": 33,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "pagesPublicationTests": {
+      "run": 33,
+      "passed": 33,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "combinedWindowsOfflineTests": {
+      "run": 107,
+      "passed": 105,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 2,
+      "scope": "COLLECTOR_AUTOMATION_AND_PAGES_PUBLICATION_TESTS_EXCLUDING_WEB_UI_TESTS"
+    },
+    "automationWindowsFinalTests": {
+      "run": 35,
+      "passed": 34,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 1,
+      "skippedScope": "POSIX_FILE_PERMISSION_ON_WINDOWS"
+    },
+    "automationUbuntuFinalTests": {
+      "root": {
+        "run": 35,
+        "passed": 35,
+        "failed": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "nonRoot": {
+        "run": 35,
+        "passed": 35,
+        "failed": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "scope": "SYNTHETIC_FIXTURES_PRODUCTION_ROOT_GUARDS_UNCHANGED"
+    },
+    "combinedWindowsFinalOfflineTests": {
+      "run": 109,
+      "passed": 107,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 2,
+      "scope": "COLLECTOR_41_AUTOMATION_35_PAGES_33_EXCLUDING_WEB_UI_TESTS"
+    }
+  },
+  "boundaries": {
+    "newPlatformSnapshotPublishedToPages": true,
+    "newPlatformCardPublicBrowserVerified": true,
+    "scheduledCollectionActivated": true,
+    "actualLabStopScenarioExecuted": true,
+    "newInboundExposureConfigured": false,
+    "livePublicReadApiConnected": false,
+    "existingRuntimeNotConfiguredValuesChanged": false,
+    "containerRuntimeImageIdVerifiedByThisCollector": false,
+    "currentJvmSourceQueriedByThisCollector": false
+  },
+  "pending": [
+    "LONG_RUNNING_OPERATION_BEYOND_OBSERVED_ELEVEN_PUBLICATIONS",
+    "CREDENTIAL_SCOPE_QUERY_EXPIRY_AND_ROTATION",
+    "OPTIONAL_LIVE_READ_API_AND_EXTERNAL_HTTPS"
+  ],
+  "finalVerifiedCollectionScope": "INITIAL_COLLECTION_RECOVERY_VALIDATION",
+  "publicationChecks": {
+    "deployedSourceAfterPr5": "41897dbb9d2a38537f1d06928dcd01273d64be4d",
+    "successfulWorkflowRuns": [
+      {
+        "runId": 38152343057,
+        "scenario": "INITIAL_PLATFORM_PUBLICATION"
+      },
+      {
+        "runId": 38152498240,
+        "scenario": "NORMAL_MANUAL_DISPATCH",
+        "previousArtifactRecoveryVerified": false
+      },
+      {
+        "runId": 38153467726,
+        "scenario": "ACTUAL_AUTHENTICATION_FAILURE_DISPATCH"
+      },
+      {
+        "runId": 38154402207,
+        "scenario": "POST_FIX_PUBLIC_RECORD_RECOVERY",
+        "previousArtifactRecoveryVerified": true
+      },
+      {
+        "runId": 38154516815,
+        "scenario": "POST_FIX_OUT_OF_ORDER_PRESERVATION",
+        "previousArtifactRecoveryVerified": true
+      },
+      {
+        "runId": 38155062511,
+        "scenario": "FINAL_NORMAL_RECOVERY_PUBLICATION",
+        "publicBrowserVerified": true
+      }
+    ],
+    "authenticationFailurePublication": {
+      "httpStatus": 401,
+      "errorCode": "AUTHENTICATION_FAILED",
+      "preservedCapturedAt": "2026-10-11T15:57:45.192508Z",
+      "failureAttemptedAt": "2026-10-11T15:57:48.944192Z",
+      "entireLastSuccessPreserved": true,
+      "publicJsonAndBrowserVerified": true,
+      "actualTlsRequestHttp401Verified": true
+    },
+    "publicBrowser": {
+      "desktopWidth": 1280,
+      "mobileWidth": 390,
+      "horizontalOverflow": false
+    },
+    "outOfOrderRegression": {
+      "detectedRunId": 38154110011,
+      "workflowConclusion": "success",
+      "publicSnapshotRegressedToInitialSeed": true,
+      "cause": "DYNAMIC_RUN_NAME_FILTER_EXCLUDED_PRIOR_DEPLOYS",
+      "correctionReverified": true,
+      "correctionCommit": "e670837fc678e9d10ea5dec4560db644f33957ab",
+      "restorationRunId": 38154402207,
+      "fixedOutOfOrderRunId": 38154516815,
+      "previousArtifactAttemptedAtAfterFixedOutOfOrder": "2026-10-11T15:57:48.944192Z",
+      "publicJsonAndBrowserPreserved": true
+    },
+    "gitOpsCommitAfterPr5": "c87787217e18a3d2954e61920e3b3b904706b001",
+    "correctionValidationRuns": {
+      "labCi": {
+        "runId": 38154386379,
+        "conclusion": "success"
+      },
+      "pushPages": {
+        "runId": 38154386391,
+        "conclusion": "success"
+      }
+    }
+  },
+  "automationInstallation": {
+    "installed": true,
+    "systemdAnalyzeVerified": true,
+    "daemonReloaded": true,
+    "timerEnabled": false,
+    "timerActive": false,
+    "pagesPatPresent": false,
+    "tokenContentReadDuringInstall": false,
+    "hostCycleDispatchPerformed": false,
+    "systemdServiceExecutionVerified": false
+  },
+  "apiWebStopVerification": {
+    "scope": "API_WEB_REPLICAS_ZERO_DATABASE_AND_EXISTING_SERVICES_PRESERVED",
+    "pauseCommit": "61d092161b078cc3beda3d12ea246eddef831fc7",
+    "pausedArgoSyncedHealthy": true,
+    "pausedActualApiPods": 0,
+    "pausedActualWebPods": 0,
+    "pausedActualDatabasePods": 1,
+    "firstHelperAttempt": {
+      "timeUtc": "16:18:09",
+      "result": "failed",
+      "passedCheckCount": 5,
+      "reason": "ENDPOINTS_NULL_SUBSETS_NOT_HANDLED"
+    },
+    "correctedHelperRetry": {
+      "attempt": 1,
+      "observedAt": "2026-10-11T16:19:17.041460Z",
+      "allChecksPassed": true
+    },
+    "publicHomeHttpStatus": 200,
+    "publicSnapshotHttpStatus": 200,
+    "publicBrowserReloadVerified": true,
+    "preservedCapturedAt": "2026-10-11T15:57:45.192508Z",
+    "preservedAttemptedAt": "2026-10-11T15:57:48.944192Z",
+    "historicalImagePinsAndReadyOnePreserved": true,
+    "databasePodUidAndSqlTimesFlywayPvcPreserved": true,
+    "existingDockerCount": 23,
+    "existingDockerIdsMountsStartTimesPreserved": true,
+    "restoreCommit": "5df664d95e051fb30cb1ca13915087d45ec9188c",
+    "restoredAt": "2026-10-11T16:20:20.506300Z",
+    "restoration": "SAME_PR5_NORMAL_B_SOURCE_AND_DIGESTS",
+    "restoredSourceCommit": "41897dbb9d2a38537f1d06928dcd01273d64be4d",
+    "restoredPodCount": 3,
+    "restoredChecks": {
+      "threeLabPodsReady": true,
+      "canonicalTwelveResults": true,
+      "persistedRunAndEventTimesPresent": true,
+      "argoSyncedHealthyAtExpectedRevision": true,
+      "apiSourceAndDigestMatch": true,
+      "podSpecsMatchPins": true,
+      "ociContentDigestsAndAmd64Relationship": true,
+      "criConfigMatchesAmd64Manifest": true,
+      "sqlStableDuringObservation": true,
+      "dockerAllRunning": true,
+      "productionPvcUidsBindingsAndStorageUnchanged": true,
+      "databasePodImageAndMountsUnchanged": true,
+      "allSqlRowsTimestampsAndFlywayUnchanged": true,
+      "allPersistedApiFieldsExceptObservedAtUnchanged": true,
+      "existingDockerIdsMountsStartTimesUnchanged": true,
+      "hostBootUnchanged": true,
+      "nodesUnchanged": true,
+      "ufwUnchanged": true,
+      "originalApiWebPinsAndSourceRestored": true
+    },
+    "restoredOciChecks": {
+      "api": {
+        "targetDigest": "sha256:57c7fcbaf266eda7402831df95a12d4cabfab250071a75eaf4d8d1855f1296cb",
+        "targetKind": "index",
+        "amd64ManifestDigest": "sha256:8309241ec24f265bf840a019b607a3d7db50392f97905d3a3998026cf06694d0",
+        "configDigest": "sha256:760677b976fef4a45fda2d3318e057be296d8b75095a45fc71333bdc508c3e22",
+        "platform": "linux/amd64",
+        "sourceCommitLabel": "41897dbb9d2a38537f1d06928dcd01273d64be4d",
+        "runtimeReports": "index",
+        "criConfigMatches": true
+      },
+      "web": {
+        "targetDigest": "sha256:012f955d4d85178c95c09c2dfee4b4ec858b3b87a1ac5216f53e81aca9e591f8",
+        "targetKind": "index",
+        "amd64ManifestDigest": "sha256:a6980bf3de983f074b8ccae39fed46cfc8f9c3f64bede0523f782d50fb8a56f8",
+        "configDigest": "sha256:c428790036c70bcb70cd478e06b5ed4862d3c67e8cb339396d5396cfcb47f150",
+        "platform": "linux/amd64",
+        "sourceCommitLabel": "41897dbb9d2a38537f1d06928dcd01273d64be4d",
+        "runtimeReports": "index",
+        "criConfigMatches": true
+      }
+    },
+    "runtimeValidationScope": "SEPARATE_RUNTIME_HELPER_NOT_PLATFORM_COLLECTOR"
+  },
+  "latestRecoveryCollection": {
+    "schemaVersion": 1,
+    "kind": "platform-observation",
+    "latestAttempt": {
+      "attemptedAt": "2026-10-11T16:20:31.503389Z",
+      "status": "success",
+      "errorCode": "NONE"
+    },
+    "lastSuccess": {
+      "capturedAt": "2026-10-11T16:20:31.503389Z",
+      "collectorVersion": "1",
+      "mainCommit": "5df664d95e051fb30cb1ca13915087d45ec9188c",
+      "jenkins": null,
+      "argo": {
+        "revision": "5df664d95e051fb30cb1ca13915087d45ec9188c",
+        "sync": "Synced",
+        "health": "Healthy"
+      },
+      "workloads": [
+        {
+          "component": "api",
+          "desired": 1,
+          "ready": 1,
+          "image": "ghcr.io/devdooly/devdooly-platform-lab-api@sha256:57c7fcbaf266eda7402831df95a12d4cabfab250071a75eaf4d8d1855f1296cb"
+        },
+        {
+          "component": "web",
+          "desired": 1,
+          "ready": 1,
+          "image": "ghcr.io/devdooly/devdooly-platform-lab-web@sha256:012f955d4d85178c95c09c2dfee4b4ec858b3b87a1ac5216f53e81aca9e591f8"
+        },
+        {
+          "component": "database",
+          "desired": 1,
+          "ready": 1
+        }
+      ],
+      "deploymentSourceCommit": "41897dbb9d2a38537f1d06928dcd01273d64be4d"
+    }
+  },
+  "initialFailureScope": "LOCAL_CREDENTIAL_FORMAT_REJECTION",
+  "latestRecoveryPublication": {
+    "runId": 38155062511,
+    "buildConclusion": "success",
+    "deployConclusion": "success",
+    "publicBrowserVerified": true,
+    "capturedAt": "2026-10-11T16:20:31.503389Z",
+    "failureBannerCleared": true,
+    "sourceAndRevisionAndWorkloadCountsMatchSnapshot": true
+  },
+  "automationInstallationScope": "HISTORICAL_INITIAL_INACTIVE_INSTALLATION_BEFORE_DEDICATED_CREDENTIAL_REGISTRATION",
+  "activationVerification": {
+    "scope": "ACTUAL_MANUAL_HOST_CYCLE_SYSTEMD_SERVICE_AND_FIRST_TIMER_TRIGGER_WITH_PAGES_PUBLICATION",
+    "dedicatedPagesCredentialRegistered": true,
+    "manualHostCycle": {
+      "runId": 38192435517,
+      "attemptStatus": "DISPATCHED",
+      "capturedAt": "2026-10-12T01:34:50.661819Z",
+      "pagesBuildConclusion": "success",
+      "pagesDeployConclusion": "success",
+      "entirePublicEnvelopeMatched": true
+    },
+    "systemdService": {
+      "runId": 38192547419,
+      "attemptStatus": "DISPATCHED",
+      "capturedAt": "2026-10-12T01:36:34.833215Z",
+      "serviceResult": "success",
+      "execMainStatus": 0,
+      "pagesBuildConclusion": "success",
+      "pagesDeployConclusion": "success",
+      "publicVerifiedAt": "2026-10-12T01:38:00.773923Z",
+      "entirePublicEnvelopeMatched": true,
+      "stateFilesRootOwnedMode0600": true,
+      "temporaryServiceAccountTokenFilesRemaining": 0
+    },
+    "timer": {
+      "enabled": true,
+      "active": true,
+      "activationObservedAt": "2026-10-12T01:38:36.685346Z",
+      "firstTriggerWasAutomatic": true,
+      "initialOnBootThresholdAlreadyElapsed": true,
+      "runId": 38192680467,
+      "attemptStatus": "DISPATCHED",
+      "capturedAt": "2026-10-12T01:38:38.790231Z",
+      "serviceResult": "success",
+      "execMainStatus": 0,
+      "serviceInactiveAfterOneshot": true,
+      "pagesBuildConclusion": "success",
+      "pagesDeployConclusion": "success",
+      "publicVerifiedAt": "2026-10-12T01:39:56.443645Z",
+      "entirePublicEnvelopeMatched": true,
+      "publicBrowserReloadVerified": true,
+      "browserJenkinsBuildNumber": 16,
+      "browserJenkinsStatus": "success",
+      "browserArgoSync": "Synced",
+      "browserArgoHealth": "Healthy",
+      "browserWorkloadCountsMatchSnapshot": true,
+      "stateFilesRootOwnedMode0600": true,
+      "temporaryServiceAccountTokenFilesRemaining": 0,
+      "collectorLockFilesRemaining": 0,
+      "nextScheduledAtAtObservation": "2026-10-12T02:09:08Z",
+      "actualThirtyMinuteIntervalElapsedVerified": false
+    },
+    "lastIntentGuardVerified": true,
+    "lastIntentGuard": {
+      "attemptStatus": "SAME_ATTEMPT_NOT_RETRIED",
+      "exitCode": 1,
+      "exitCodeIsByDesign": true,
+      "newRunIdCreated": false,
+      "priorDispatchJournalBytesPreserved": true,
+      "priorDispatchedRunId": 38192680467,
+      "globalExactlyOnceClaimed": false
+    },
+    "credentialActualScopeQueried": false,
+    "credentialActualExpiryTested": false,
+    "credentialRotationTested": false,
+    "longRunningRepeatedPublicationVerified": false,
+    "newInboundExposureConfigured": false,
+    "preservationComparison": {
+      "verifiedAt": "2026-10-12T01:46:45.030525Z",
+      "existingDockerContainerCount": 35,
+      "existingDockerRunningCount": 23,
+      "allDockerIdentitiesStartTimesMountsAndRunningStatesPreserved": true,
+      "threeLabPodIdentitiesAndContainerSpecsPreserved": true,
+      "allChecksPassed": true,
+      "checks": {
+        "dockerIdentitySetEqual": true,
+        "dockerStartTimesEqual": true,
+        "dockerMountSetsEqual": true,
+        "dockerRunningStatesEqual": true,
+        "dockerRawMountOrderEqual": false,
+        "labPodIdentitySetEqual": true,
+        "labContainerSpecsEqual": true,
+        "threeLabPodsReady": true
+      },
+      "scope": "READ_ONLY_COMPARISON_ACROSS_OBSERVER_TIMER_ACTIVATION_NO_SQL_REVALIDATION"
+    },
+    "initialPreservationComparison": {
+      "status": "HELPER_ASSERTION_FAILED",
+      "reason": "DOCKER_MOUNT_ARRAY_ORDER_DIFFERED_BETWEEN_READS",
+      "rawFailureRetainedPrivately": true,
+      "firstAttemptCountedAsPassed": false
+    },
+    "mountComparisonSemantics": "ORDER_INDEPENDENT_MOUNT_SETS_RAW_ARRAY_ORDER_CAN_DIFFER",
+    "sqlRevalidatedDuringActivation": false
+  },
+  "activationVerificationScope": "HISTORICAL_INITIAL_ACTIVATION_BEFORE_REPEATED_EXECUTION_VERIFICATION",
+  "repeatedVerification": {
+    "scope": "ELEVEN_AUTOMATIC_TIMER_EXECUTIONS_PAGES_RESULTS_AND_SERVICE_COMPLETION_INTERVALS",
+    "completedAtSemantics": "HOST_SERVICE_EXECUTION_COMPLETION_UTC_NOT_COLLECTOR_CAPTURE_OR_PAGES_DEPLOY_COMPLETION",
+    "includesFirstAutomaticTrigger": true,
+    "summary": {
+      "serviceExecutions": 11,
+      "acceptedPublications": 11,
+      "allDispatchesAccepted": true,
+      "firstCompletedAt": "2026-10-12T01:38:40.510720Z",
+      "lastCompletedAt": "2026-10-12T06:45:29.625204Z",
+      "minimumObservedIntervalSeconds": 1825.569287,
+      "maximumObservedIntervalSeconds": 1875.101367
+    },
+    "executions": [
+      {
+        "completedAt": "2026-10-12T01:38:40.510720Z",
+        "attemptStatus": "DISPATCHED",
+        "runId": 38192680467,
+        "runUrl": "https://github.com/DevDooly/devdooly-platform-lab/actions/runs/38192680467",
+        "status": "completed",
+        "conclusion": "success",
+        "jobs": {
+          "build": "success",
+          "deploy": "success"
+        }
+      },
+      {
+        "completedAt": "2026-10-12T02:09:16.021621Z",
+        "attemptStatus": "DISPATCHED",
+        "runId": 38194669140,
+        "runUrl": "https://github.com/DevDooly/devdooly-platform-lab/actions/runs/38194669140",
+        "status": "completed",
+        "conclusion": "success",
+        "jobs": {
+          "build": "success",
+          "deploy": "success"
+        }
+      },
+      {
+        "completedAt": "2026-10-12T02:39:58.959112Z",
+        "attemptStatus": "DISPATCHED",
+        "runId": 38196672320,
+        "runUrl": "https://github.com/DevDooly/devdooly-platform-lab/actions/runs/38196672320",
+        "status": "completed",
+        "conclusion": "success",
+        "jobs": {
+          "build": "success",
+          "deploy": "success"
+        }
+      },
+      {
+        "completedAt": "2026-10-12T03:10:40.793426Z",
+        "attemptStatus": "DISPATCHED",
+        "runId": 38198726020,
+        "runUrl": "https://github.com/DevDooly/devdooly-platform-lab/actions/runs/38198726020",
+        "status": "completed",
+        "conclusion": "success",
+        "jobs": {
+          "build": "success",
+          "deploy": "success"
+        }
+      },
+      {
+        "completedAt": "2026-10-12T03:41:55.894793Z",
+        "attemptStatus": "DISPATCHED",
+        "runId": 38200776134,
+        "runUrl": "https://github.com/DevDooly/devdooly-platform-lab/actions/runs/38200776134",
+        "status": "completed",
+        "conclusion": "success",
+        "jobs": {
+          "build": "success",
+          "deploy": "success"
+        }
+      },
+      {
+        "completedAt": "2026-10-12T04:12:29.962930Z",
+        "attemptStatus": "DISPATCHED",
+        "runId": 38202843810,
+        "runUrl": "https://github.com/DevDooly/devdooly-platform-lab/actions/runs/38202843810",
+        "status": "completed",
+        "conclusion": "success",
+        "jobs": {
+          "build": "success",
+          "deploy": "success"
+        }
+      },
+      {
+        "completedAt": "2026-10-12T04:43:05.802855Z",
+        "attemptStatus": "DISPATCHED",
+        "runId": 38204920752,
+        "runUrl": "https://github.com/DevDooly/devdooly-platform-lab/actions/runs/38204920752",
+        "status": "completed",
+        "conclusion": "success",
+        "jobs": {
+          "build": "success",
+          "deploy": "success"
+        }
+      },
+      {
+        "completedAt": "2026-10-12T05:13:31.372142Z",
+        "attemptStatus": "DISPATCHED",
+        "runId": 38207013275,
+        "runUrl": "https://github.com/DevDooly/devdooly-platform-lab/actions/runs/38207013275",
+        "status": "completed",
+        "conclusion": "success",
+        "jobs": {
+          "build": "success",
+          "deploy": "success"
+        }
+      },
+      {
+        "completedAt": "2026-10-12T05:43:57.060377Z",
+        "attemptStatus": "DISPATCHED",
+        "runId": 38209223283,
+        "runUrl": "https://github.com/DevDooly/devdooly-platform-lab/actions/runs/38209223283",
+        "status": "completed",
+        "conclusion": "success",
+        "jobs": {
+          "build": "success",
+          "deploy": "success"
+        }
+      },
+      {
+        "completedAt": "2026-10-12T06:14:50.515895Z",
+        "attemptStatus": "DISPATCHED",
+        "runId": 38211593641,
+        "runUrl": "https://github.com/DevDooly/devdooly-platform-lab/actions/runs/38211593641",
+        "status": "completed",
+        "conclusion": "success",
+        "jobs": {
+          "build": "success",
+          "deploy": "success"
+        }
+      },
+      {
+        "completedAt": "2026-10-12T06:45:29.625204Z",
+        "attemptStatus": "DISPATCHED",
+        "runId": 38214103463,
+        "runUrl": "https://github.com/DevDooly/devdooly-platform-lab/actions/runs/38214103463",
+        "status": "completed",
+        "conclusion": "success",
+        "jobs": {
+          "build": "success",
+          "deploy": "success"
+        }
+      }
+    ],
+    "intervalSeconds": [
+      1835.510901,
+      1842.937491,
+      1841.834314,
+      1875.101367,
+      1834.068137,
+      1835.839925,
+      1825.569287,
+      1825.688235,
+      1853.455518,
+      1839.109309
+    ],
+    "allPagesBuildsSucceeded": true,
+    "allPagesDeploysSucceeded": true,
+    "actualPeriodicIntervalsObserved": true,
+    "entirePublicEnvelopeAndBrowserVerifiedForEveryExecution": false,
+    "longTermAvailabilityVerified": false,
+    "timerHealthCheck": {
+      "observedAt": "2026-10-12T07:17:51.289331Z",
+      "timerEnabled": true,
+      "timerActive": true,
+      "serviceState": "inactive",
+      "serviceResult": "success",
+      "execMainStatus": "0",
+      "privateStatePermissionsValid": true,
+      "temporaryCredentialsRemaining": 0,
+      "collectorLockRemains": false
+    }
+  },
+  "latestPublicationVerification": {
+    "runId": 38216819944,
+    "runUrl": "https://github.com/DevDooly/devdooly-platform-lab/actions/runs/38216819944",
+    "buildConclusion": "success",
+    "deployConclusion": "success",
+    "publicSnapshotMatchesEntireEnvelope": true,
+    "verifiedAt": "2026-10-12T07:18:45.045160Z",
+    "capturedAt": "2026-10-12T07:16:23.800530Z",
+    "publicBrowserReloadVerified": true,
+    "browserJenkinsBuildNumber": 17,
+    "browserArgoSync": "Synced",
+    "browserArgoHealth": "Healthy",
+    "browserWorkloadCountsMatchSnapshot": true,
+    "scope": "SEPARATE_LATEST_PUBLICATION_NOT_COUNTED_IN_ELEVEN_EXECUTION_WINDOW"
+  }
+}

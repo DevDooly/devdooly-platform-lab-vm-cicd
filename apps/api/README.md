@@ -1,0 +1,50 @@
+# Spring Boot 조회 API
+
+Java 21, Spring Boot 4.1.1, Maven Wrapper 3.3.4 (공식 bin 방식) / Maven 3.10.0을 사용합니다. JPA와 Flyway로 실행 결과와 입력별 판정을 MariaDB에 저장합니다. 회사 데이터·코드를 사용하지 않는 합성 센서 예제입니다.
+
+## 검증과 실행
+
+```sh
+./mvnw verify
+```
+
+Windows에서는 `mvnw.cmd verify`를 사용합니다. 테스트는 별도 `test` profile의 H2이며 MariaDB 운영 검증을 대신하지 않습니다.
+
+MariaDB 실행 정보는 환경변수로 주입합니다. 비밀번호는 저장소에 넣지 않습니다.
+
+```sh
+export SPRING_DATASOURCE_URL=jdbc:mariadb://127.0.0.1:3306/platform_lab
+export SPRING_DATASOURCE_USERNAME=platform_lab
+export SPRING_DATASOURCE_PASSWORD='your-local-password'
+./mvnw spring-boot:run
+```
+
+기본 8080 포트입니다. 같은 스키마에 다른 애플리케이션을 연결하지 않습니다. 실제 서버 설치·DB 생성은 환경 점검 이후 별도 인프라 절차를 따릅니다.
+
+MariaDB 없이 로컬 코드·HTTP를 확인할 때만 명시적으로 다음 profile을 켭니다. DB는 Git 제외 `target/` 아래에 저장됩니다.
+
+```sh
+./mvnw spring-boot:run -Dspring-boot.run.profiles=local-dev
+```
+
+## 구현한 범위
+
+- `GET /api/demo/runs`, `GET /api/demo/runs/{id}`: 저장된 합성 작업 결과 조회
+- `GET /api/platform/summary`, `GET /api/platform/releases`: 실제 런타임 정보와 미구성 도구 상태
+- `GET /actuator/health`, `/actuator/health/readiness`: DB를 포함한 health 점검
+- 고정 seed 42의 12건: 성공 7, 실패 3, 중복 2, 대기 0
+- 최초 시작 시 고정 run ID를 저장하고 이후 시작에서는 이미 저장된 결과를 재사용
+
+공개 실행 POST는 제공하지 않습니다. 기본 API는 Kafka·S3 client나 상시 worker를 자동 생성하지 않습니다. 명시적 `--lab-runtime=run|resume` 실행기는 API/관리 절차가 V3를 적용한 뒤 worker/non-web 모드에서 별도로 시작합니다. 내부 `--lab-runtime=stage`는 기본 V1 12건을 유지하며, `LAB_RUNTIME_STAGE_SCENARIO=sensor-validation-v2`로 고정 합성 입력 1,000건(성공 500·실패 300·중복 200·대기 0)을 선택합니다. 임의 파일·건수·URL은 받지 않습니다. 원본은 1 MiB, 결과/실패 문서는 각각 4 MiB, Kafka 포인터는 1,024 bytes 이하이며 export 확인까지 진행 슬롯 1개를 유지합니다. 읽기 전용 `GET /api/jobs/observation`은 작업·export·실행기 journal을 별도 계약으로 제공합니다.
+
+현재 기본 verify는 140개이며 최대 입력·동시 접수의 실제 격리 기능 IT 5개를 통과했습니다. Windows Java 드라이버와 Linux Docker backend의 기능 검증이며 운영 자원 성능·SLA가 아닙니다. V1 bytes/hash는 유지하지만 이전 image가 V2를 처리하지는 못하므로 최초 V2 접수 전에 API와 worker를 모두 지원 image로 갱신해야 합니다. [버전·제한 결정](../../docs/adr/0010-versioned-bounded-input.md), [최대 입력·동시 접수 절차](../../docs/runbooks/maximum-input-concurrency.md)를 따릅니다. 앞서 수행한 상시 IT 4개와 이후 배포·복구는 [상시 실행 절차](../../docs/runbooks/continuous-runtime.md)에, [작업 관측 계약](../../docs/contracts/job-observation.md)과 기반의 [원본 S3](../../docs/runbooks/s3-source-storage.md)·[Kafka 재전달](../../docs/evidence/kafka-redelivery/README.md)·[결과 export](../../docs/evidence/result-export/README.md) 근거는 각 문서에 분리했습니다. Linux 제한 자원 실행과 이번 변경의 운영 반영은 [별도 실행 근거](../../docs/evidence/input-concurrency-load/README.md)에 기록합니다. 슬롯 제어는 요청률 제한기가 아니며 공개 rate limiter를 추가하지 않았습니다.
+
+현재 bootstrap은 단일 조회 앱 인스턴스의 최초 시작을 전제로 합니다. 여러 조회 replica가 동시에 seed를 처음 생성하는 배포 전에는 별도 DB 잠금/seed Job을 추가해야 합니다. worker mode는 seed bootstrap을 실행하지 않습니다.
+
+[API 계약](../../docs/contracts/demo-api.md), [독립 시나리오](../../tests/scenarios/sensor-validation-v1.json), [검증 기록](../../docs/evidence/api-mvp/README.md)을 참고합니다.
+
+## 버전 근거
+
+2026-10-11 공식 [Spring Boot 요구사항](https://docs.spring.io/spring-boot/system-requirements.html)과 [Maven 다운로드](https://maven.apache.org/download.cgi), [Maven Wrapper 3.3.4](https://maven.apache.org/tools/wrapper/)를 확인했습니다. Java 21은 Boot 4.1.1의 지원 범위에 포함됩니다. Maven 배포 SHA512를 내려받아 확인한 후 wrapper 배포 SHA256에도 고정합니다.
+
+Wrapper jar는 공식 Maven Central 체크섬과 대조하고 wrapperSha256Sum을 고정했습니다. Java가 Maven ZIP을 검증·압축 해제하므로 비루트 JDK container에서 별도 unzip 설치가 필요하지 않습니다.

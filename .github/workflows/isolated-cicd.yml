@@ -1,0 +1,268 @@
+name: Isolated VM CI/CD
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/isolated-cicd.yml
+  status:
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    shell: bash
+
+env:
+  IMAGE: ghcr.io/devdooly/platform-lab-vm-cicd
+
+jobs:
+  bootstrap:
+    if: github.repository == 'DevDooly/devdooly-platform-lab-vm-cicd' && github.event_name == 'push'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      packages: write
+    steps:
+      - name: Prepare the registry marker
+        run: |
+          mkdir marker
+          printf 'FROM scratch\nCOPY marker.txt /marker.txt\n' > marker/Dockerfile
+          printf 'DevDooly Platform Lab isolated VM registry bootstrap\n' > marker/marker.txt
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+
+      - name: Log in to the isolated GHCR package
+        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ github.token }}
+
+      - name: Publish the registry marker
+        id: marker
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: marker
+          platforms: linux/amd64
+          push: true
+          tags: ghcr.io/devdooly/platform-lab-vm-cicd:bootstrap
+          labels: org.opencontainers.image.source=https://github.com/DevDooly/devdooly-platform-lab-vm-cicd
+
+      - name: Record the package marker digest
+        env:
+          MARKER_DIGEST: ${{ steps.marker.outputs.digest }}
+        run: printf 'Registry marker %s@%s\n' "$IMAGE" "$MARKER_DIGEST" >> "$GITHUB_STEP_SUMMARY"
+
+  gate:
+    if: >-
+      github.repository == 'DevDooly/devdooly-platform-lab-vm-cicd' &&
+      github.event_name == 'status' &&
+      github.event.state == 'success' &&
+      github.event.context == 'ci/jenkins-vm-e2e' &&
+      github.event.sender.login == 'DevDooly'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      source: ${{ steps.status.outputs.source }}
+      build: ${{ steps.status.outputs.build }}
+      status_id: ${{ steps.status.outputs.status_id }}
+    steps:
+      - name: Bind the Jenkins result to the current main commit
+        id: status
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          source=$(jq -er '.sha' "$GITHUB_EVENT_PATH")
+          description=$(jq -er '.description' "$GITHUB_EVENT_PATH")
+          status_id=$(jq -er '.id | select(type == "number")' "$GITHUB_EVENT_PATH")
+          pattern='^Jenkins VM build ([1-9][0-9]*) verified$'
+          [[ "$source" =~ ^[0-9a-f]{40}$ ]]
+          [[ "$description" =~ $pattern ]]
+          build="${BASH_REMATCH[1]}"
+          live_main=$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/main" --jq '.object.sha')
+          if [[ "$source" != "$live_main" ]]; then
+            echo 'Jenkins verified a commit other than current main' >&2
+            exit 1
+          fi
+          printf 'source=%s\nbuild=%s\nstatus_id=%s\n' "$source" "$build" "$status_id" >> "$GITHUB_OUTPUT"
+
+  publish:
+    needs: gate
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      api: ${{ steps.verify.outputs.api }}
+      web: ${{ steps.verify.outputs.web }}
+    env:
+      DOCKER_BUILD_RECORD_UPLOAD: 'false'
+      DOCKER_BUILD_SUMMARY: 'false'
+    steps:
+      - name: Checkout the exact Jenkins-verified commit
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.gate.outputs.source }}
+          persist-credentials: false
+
+      - name: Verify the checked-out source
+        env:
+          SOURCE: ${{ needs.gate.outputs.source }}
+        run: test "$(git rev-parse HEAD)" = "$SOURCE"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+
+      - name: Build API before registry authentication
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: .
+          file: infra/containers/api.Dockerfile
+          platforms: linux/amd64
+          outputs: type=cacheonly
+
+      - name: Build web before registry authentication
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: .
+          file: infra/containers/web.Dockerfile
+          platforms: linux/amd64
+          outputs: type=cacheonly
+
+      - name: Check current main before publication
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SOURCE: ${{ needs.gate.outputs.source }}
+        run: test "$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/main" --jq '.object.sha')" = "$SOURCE"
+
+      - name: Log in to the isolated GHCR package
+        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ github.token }}
+
+      - name: Publish the API image
+        id: api
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: .
+          file: infra/containers/api.Dockerfile
+          platforms: linux/amd64
+          push: true
+          tags: ghcr.io/devdooly/platform-lab-vm-cicd:api-${{ needs.gate.outputs.source }}
+          labels: |
+            org.opencontainers.image.source=https://github.com/DevDooly/devdooly-platform-lab-vm-cicd
+            org.opencontainers.image.revision=${{ needs.gate.outputs.source }}
+            org.opencontainers.image.title=Platform Lab isolated VM API
+          provenance: mode=min
+
+      - name: Publish the web image
+        id: web
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: .
+          file: infra/containers/web.Dockerfile
+          platforms: linux/amd64
+          push: true
+          tags: ghcr.io/devdooly/platform-lab-vm-cicd:web-${{ needs.gate.outputs.source }}
+          labels: |
+            org.opencontainers.image.source=https://github.com/DevDooly/devdooly-platform-lab-vm-cicd
+            org.opencontainers.image.revision=${{ needs.gate.outputs.source }}
+            org.opencontainers.image.title=Platform Lab isolated VM web
+          provenance: mode=min
+
+      - name: Confirm both published registry digests
+        id: verify
+        env:
+          SOURCE: ${{ needs.gate.outputs.source }}
+          API_DIGEST: ${{ steps.api.outputs.digest }}
+          WEB_DIGEST: ${{ steps.web.outputs.digest }}
+        run: |
+          for component in api web; do
+            digest_name="${component^^}_DIGEST"
+            digest="${!digest_name}"
+            [[ "$digest" =~ ^sha256:[0-9a-f]{64}$ ]]
+            observed=$(docker buildx imagetools inspect "$IMAGE:$component-$SOURCE" --format '{{json .Manifest}}' | jq -er '.digest')
+            test "$observed" = "$digest"
+            printf '%s=%s\n' "$component" "$digest" >> "$GITHUB_OUTPUT"
+          done
+
+  gitops:
+    needs: [gate, publish]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: write
+    steps:
+      - name: Update only the existing isolated deploy values
+        id: deploy
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SOURCE: ${{ needs.gate.outputs.source }}
+          BUILD: ${{ needs.gate.outputs.build }}
+          API_DIGEST: ${{ needs.publish.outputs.api }}
+          WEB_DIGEST: ${{ needs.publish.outputs.web }}
+        run: |
+          values_path=infra/charts/platform-lab/vm-values.json
+          contents="repos/$GITHUB_REPOSITORY/contents/$values_path"
+          existing=$(gh api --method GET "$contents" -f ref=deploy)
+          file_sha=$(jq -er 'select(.type == "file" and .encoding == "base64") | .sha' <<< "$existing")
+          jq -er '.content' <<< "$existing" | base64 --decode > current-values.json
+          jq -e '.database.existingSecret == "platform-lab-vm-cicd-db"' current-values.json > /dev/null
+          jq --arg image "$IMAGE" --arg api "$API_DIGEST" --arg web "$WEB_DIGEST" --arg source "$SOURCE" \
+            '.api.image = {repository: $image, digest: $api} |
+             .api.sourceCommit = $source |
+             .web.image = {repository: $image, digest: $web}' current-values.json > vm-values.json
+          live_main=$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/main" --jq '.object.sha')
+          test "$live_main" = "$SOURCE"
+          if diff -q <(jq -S . current-values.json) <(jq -S . vm-values.json) > /dev/null; then
+            deploy_commit=$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/deploy" --jq '.object.sha')
+            updated=false
+          else
+            encoded=$(base64 --wrap=0 vm-values.json)
+            deploy_commit=$(gh api --method PUT "$contents" \
+              -f branch=deploy -f sha="$file_sha" -f content="$encoded" \
+              -f message="Deploy Jenkins VM build $BUILD ($SOURCE)" --jq '.commit.sha')
+            updated=true
+          fi
+          [[ "$deploy_commit" =~ ^[0-9a-f]{40}$ ]]
+          printf 'commit=%s\nupdated=%s\n' "$deploy_commit" "$updated" >> "$GITHUB_OUTPUT"
+
+      - name: Record Jenkins, image publication and GitOps evidence
+        env:
+          SOURCE: ${{ needs.gate.outputs.source }}
+          BUILD: ${{ needs.gate.outputs.build }}
+          STATUS_ID: ${{ needs.gate.outputs.status_id }}
+          API_DIGEST: ${{ needs.publish.outputs.api }}
+          WEB_DIGEST: ${{ needs.publish.outputs.web }}
+          DEPLOY_COMMIT: ${{ steps.deploy.outputs.commit }}
+          UPDATED: ${{ steps.deploy.outputs.updated }}
+        run: |
+          run_url="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+          deploy_url="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/commit/$DEPLOY_COMMIT"
+          jq -n --arg commit "$SOURCE" --arg build "$BUILD" --arg statusId "$STATUS_ID" \
+            --arg run "$run_url" --arg attempt "$GITHUB_RUN_ATTEMPT" --arg image "$IMAGE" \
+            --arg api "$API_DIGEST" --arg web "$WEB_DIGEST" --arg deploy "$DEPLOY_COMMIT" \
+            --arg deployUrl "$deploy_url" --argjson updated "$UPDATED" \
+            '{sourceCommit: $commit, jenkins: {buildNumber: ($build | tonumber), statusId: $statusId},
+              publication: {runUrl: $run, attempt: ($attempt | tonumber), job: "publish"},
+              images: {api: ($image + "@" + $api), web: ($image + "@" + $web)},
+              gitops: {branch: "deploy", commit: $deploy, commitUrl: $deployUrl, updated: $updated}}' > image-manifest.json
+          {
+            printf 'Jenkins VM build %s verified source %s (status %s).\n\n' "$BUILD" "$SOURCE" "$STATUS_ID"
+            printf 'API %s@%s\n\nWeb %s@%s\n\n' "$IMAGE" "$API_DIGEST" "$IMAGE" "$WEB_DIGEST"
+            printf 'GitOps [deploy commit](%s). Branch updated %s.\n' "$deploy_url" "$UPDATED"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload the image and GitOps manifest
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: vm-cicd-manifest-${{ github.run_attempt }}
+          path: image-manifest.json
+          if-no-files-found: error
+          retention-days: 14
