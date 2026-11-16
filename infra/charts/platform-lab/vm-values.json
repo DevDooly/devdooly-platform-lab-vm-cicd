@@ -1,15 +1,15 @@
 {
   "api": {
     "image": {
-      "repository": "ghcr.io/devdooly/devdooly-platform-lab-api",
-      "digest": "sha256:a7fbcefb482c1bd6149663196845b33f30323b897261c567f3c82d583e457441"
+      "repository": "ghcr.io/devdooly/platform-lab-vm-cicd",
+      "digest": "sha256:bb58ab9cb52731568618088c8fbb37f66351d9cf9d701e9787325c5ff144a063"
     },
-    "sourceCommit": "c7540354fca2bd65d4cdcb576e7fba9ddd483928"
+    "sourceCommit": "535c11642b8499ee9d70aef6564a574fe99d4fc9"
   },
   "web": {
     "image": {
-      "repository": "ghcr.io/devdooly/devdooly-platform-lab-web",
-      "digest": "sha256:ed9d743726a2b451cbd0dabcf6f41c10f821ec75808d1480491a0a59f22b553c"
+      "repository": "ghcr.io/devdooly/platform-lab-vm-cicd",
+      "digest": "sha256:d6e4d27e4689b6e99d64f9dedd66b4614ba64fa88913c379c379335da58a1ac5"
     }
   },
   "database": {
